@@ -5,7 +5,10 @@ import { WorkoutType } from './types';
 export type { WorkoutType };
 export { WORKOUT_TYPES } from './types';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'workouts.json');
+// In production (Railway), data lives on the persistent Volume at /app/data.
+// In dev, fall back to the local data/ folder inside the project.
+const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data');
+const DATA_FILE = path.join(DATA_DIR, 'workouts.json');
 
 export interface Workout {
   id: string;
