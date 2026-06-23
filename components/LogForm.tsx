@@ -144,7 +144,7 @@ export default function LogForm({ users }: { users: string[] }) {
           min={APP_START}
           max={today}
           onChange={e => setDate(e.target.value)}
-          className="w-full px-4 py-3 rounded-2xl text-base font-bold"
+          className="px-4 py-3 rounded-2xl text-base font-bold"
           style={{
             background: 'var(--card)',
             border: `2px solid ${isBackfill ? '#F5A623' : 'var(--border)'}`,
