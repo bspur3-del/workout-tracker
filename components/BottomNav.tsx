@@ -15,8 +15,9 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed flex"
+      className="flex"
       style={{
+        position: 'fixed',
         bottom: '16px',
         left: '50%',
         transform: 'translateX(-50%)',
@@ -25,6 +26,7 @@ export default function BottomNav() {
         background: 'var(--card)',
         border: '1px solid var(--border)',
         borderRadius: '20px',
+        zIndex: 50,
       }}
     >
       {links.map(({ href, label, icon }) => {
