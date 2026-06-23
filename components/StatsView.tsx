@@ -138,19 +138,29 @@ export default function StatsView({
               const dayWorkouts = byDate.get(date) ?? [];
               const isToday = date === today;
               const isFuture = date > today;
+              const dayNum = Number(date.slice(8)); // day-of-month
               return (
                 <div key={date} className="flex flex-col items-center gap-0.5 py-0.5">
+                  <span
+                    className="text-xs leading-none mb-0.5"
+                    style={{
+                      color: isToday ? '#fff' : isFuture ? '#333' : '#555',
+                      fontWeight: isToday ? 700 : 400,
+                    }}
+                  >
+                    {dayNum}
+                  </span>
                   {dayWorkouts.length > 0 ? (
                     dayWorkouts.slice(0, 3).map((w, i) => (
                       <div
                         key={i}
-                        className="w-5 h-5 rounded-full"
+                        className="w-4 h-4 rounded-full"
                         style={{ background: TYPE_COLOR[w.type] }}
                       />
                     ))
                   ) : (
                     <div
-                      className="w-5 h-5 rounded-full"
+                      className="w-4 h-4 rounded-full"
                       style={{
                         background: 'transparent',
                         border: `1.5px solid ${isToday ? '#555' : isFuture ? 'transparent' : '#1e1e1e'}`,
