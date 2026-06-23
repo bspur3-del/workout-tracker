@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import { Pool } from 'pg';
 import { WorkoutType } from './types';
 
 export type { WorkoutType };
@@ -13,21 +16,22 @@ export interface Workout {
 
 // ─── PostgreSQL ───────────────────────────────────────────────────────────────
 
-let pool: import('pg').Pool | null = null;
+let pool: Pool | null = null;
 
-function getPool(): import('pg').Pool {
+function getPool(): Pool {
   if (!pool) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Pool } = require('pg') as typeof import('pg');
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      ssl: process.env.DATABASE_URL?.includes('localhost')
+        ? false
+        : { rejectUnauthorized: false },
     });
   }
   return pool;
 }
 
 let tableReady: Promise<void> | null = null;
+
 function ensureTable(): Promise<void> {
   if (!tableReady) {
     tableReady = getPool()
@@ -40,45 +44,16 @@ function ensureTable(): Promise<void> {
           timestamp BIGINT NOT NULL
         )
       `)
-      .then(() => undefined);
+      .then(() => undefined)
+      .catch(err => {
+        tableReady = null; // allow retry next request
+        throw err;
+      });
   }
   return tableReady;
 }
 
-async function pgGetAll(): Promise<Workout[]> {
-  await ensureTable();
-  const { rows } = await getPool().query('SELECT * FROM workouts ORDER BY timestamp ASC');
-  return rows.map(r => ({
-    id: r.id,
-    user: r.user,
-    date: r.date,
-    type: r.type as WorkoutType,
-    timestamp: Number(r.timestamp),
-  }));
-}
-
-async function pgLog(user: string, date: string, type: WorkoutType): Promise<void> {
-  await ensureTable();
-  const id = `${user}-${date}-${type}-${Date.now()}`;
-  await getPool().query(
-    'INSERT INTO workouts (id, "user", date, type, timestamp) VALUES ($1, $2, $3, $4, $5)',
-    [id, user, date, type, Date.now()]
-  );
-}
-
-async function pgHasLogged(user: string, date: string, type: WorkoutType): Promise<boolean> {
-  await ensureTable();
-  const { rows } = await getPool().query(
-    'SELECT 1 FROM workouts WHERE "user" = $1 AND date = $2 AND type = $3 LIMIT 1',
-    [user, date, type]
-  );
-  return rows.length > 0;
-}
-
 // ─── File fallback ────────────────────────────────────────────────────────────
-
-import fs from 'fs';
-import path from 'path';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'workouts.json');
 
@@ -95,23 +70,68 @@ function writeDB(db: DB): void {
   fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
-
-const usePostgres = !!process.env.DATABASE_URL;
+// ─── Public API (Postgres with file fallback) ─────────────────────────────────
 
 export async function getAllWorkouts(): Promise<Workout[]> {
-  if (usePostgres) return pgGetAll();
-  return readDB().workouts;
+  if (!process.env.DATABASE_URL) return readDB().workouts;
+  try {
+    await ensureTable();
+    const { rows } = await getPool().query('SELECT * FROM workouts ORDER BY timestamp ASC');
+    return rows.map(r => ({
+      id: r.id,
+      user: r.user,
+      date: r.date,
+      type: r.type as WorkoutType,
+      timestamp: Number(r.timestamp),
+    }));
+  } catch (err) {
+    console.error('DB error, falling back to file:', err);
+    return readDB().workouts;
+  }
 }
 
 export async function logWorkout(user: string, date: string, type: WorkoutType): Promise<void> {
-  if (usePostgres) return pgLog(user, date, type);
-  const db = readDB();
-  db.workouts.push({ id: `${user}-${date}-${type}-${Date.now()}`, user, date, type, timestamp: Date.now() });
-  writeDB(db);
+  const entry: Workout = {
+    id: `${user}-${date}-${type}-${Date.now()}`,
+    user, date, type, timestamp: Date.now(),
+  };
+  if (!process.env.DATABASE_URL) {
+    const db = readDB();
+    db.workouts.push(entry);
+    writeDB(db);
+    return;
+  }
+  try {
+    await ensureTable();
+    await getPool().query(
+      'INSERT INTO workouts (id, "user", date, type, timestamp) VALUES ($1, $2, $3, $4, $5)',
+      [entry.id, entry.user, entry.date, entry.type, entry.timestamp]
+    );
+  } catch (err) {
+    console.error('DB error, falling back to file:', err);
+    const db = readDB();
+    db.workouts.push(entry);
+    writeDB(db);
+  }
 }
 
-export async function hasLoggedTypeOnDate(user: string, date: string, type: WorkoutType): Promise<boolean> {
-  if (usePostgres) return pgHasLogged(user, date, type);
-  return readDB().workouts.some(w => w.user === user && w.date === date && w.type === type);
+export async function hasLoggedTypeOnDate(
+  user: string,
+  date: string,
+  type: WorkoutType
+): Promise<boolean> {
+  if (!process.env.DATABASE_URL) {
+    return readDB().workouts.some(w => w.user === user && w.date === date && w.type === type);
+  }
+  try {
+    await ensureTable();
+    const { rows } = await getPool().query(
+      'SELECT 1 FROM workouts WHERE "user" = $1 AND date = $2 AND type = $3 LIMIT 1',
+      [user, date, type]
+    );
+    return rows.length > 0;
+  } catch (err) {
+    console.error('DB error, falling back to file:', err);
+    return readDB().workouts.some(w => w.user === user && w.date === date && w.type === type);
+  }
 }
