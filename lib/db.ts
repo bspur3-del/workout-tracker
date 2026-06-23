@@ -14,6 +14,8 @@ export interface Workout {
   timestamp: number;
 }
 
+const DEFAULT_USERS = ['Blake', 'Matt', 'Kyle'];
+
 // ─── PostgreSQL ───────────────────────────────────────────────────────────────
 
 let pool: Pool | null = null;
@@ -42,11 +44,14 @@ function ensureTable(): Promise<void> {
           date      TEXT NOT NULL,
           type      TEXT NOT NULL,
           timestamp BIGINT NOT NULL
-        )
+        );
+        CREATE TABLE IF NOT EXISTS users (
+          name TEXT PRIMARY KEY
+        );
       `)
       .then(() => undefined)
       .catch(err => {
-        tableReady = null; // allow retry next request
+        tableReady = null;
         throw err;
       });
   }
@@ -57,11 +62,18 @@ function ensureTable(): Promise<void> {
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'workouts.json');
 
-interface DB { workouts: Workout[] }
+interface DB { workouts: Workout[]; users: string[] }
 
 function readDB(): DB {
-  try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8')); }
-  catch { return { workouts: [] }; }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    return {
+      workouts: parsed.workouts ?? [],
+      users: parsed.users ?? [...DEFAULT_USERS],
+    };
+  } catch {
+    return { workouts: [], users: [...DEFAULT_USERS] };
+  }
 }
 
 function writeDB(db: DB): void {
@@ -70,7 +82,49 @@ function writeDB(db: DB): void {
   fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
 }
 
-// ─── Public API (Postgres with file fallback) ─────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+export async function getUsers(): Promise<string[]> {
+  if (!process.env.DATABASE_URL) return readDB().users;
+  try {
+    await ensureTable();
+    const { rows } = await getPool().query('SELECT name FROM users ORDER BY name ASC');
+    if (rows.length === 0) {
+      for (const name of DEFAULT_USERS) {
+        await getPool().query(
+          'INSERT INTO users (name) VALUES ($1) ON CONFLICT DO NOTHING',
+          [name]
+        );
+      }
+      return [...DEFAULT_USERS];
+    }
+    return rows.map(r => r.name as string);
+  } catch (err) {
+    console.error('DB error in getUsers:', err);
+    return [...DEFAULT_USERS];
+  }
+}
+
+export async function addUser(name: string): Promise<void> {
+  if (!process.env.DATABASE_URL) {
+    const db = readDB();
+    if (!db.users.includes(name)) {
+      db.users.push(name);
+      db.users.sort();
+      writeDB(db);
+    }
+    return;
+  }
+  try {
+    await ensureTable();
+    await getPool().query(
+      'INSERT INTO users (name) VALUES ($1) ON CONFLICT DO NOTHING',
+      [name]
+    );
+  } catch (err) {
+    console.error('DB error in addUser:', err);
+  }
+}
 
 export async function getAllWorkouts(): Promise<Workout[]> {
   if (!process.env.DATABASE_URL) return readDB().workouts;
@@ -85,7 +139,7 @@ export async function getAllWorkouts(): Promise<Workout[]> {
       timestamp: Number(r.timestamp),
     }));
   } catch (err) {
-    console.error('DB error, falling back to file:', err);
+    console.error('DB error in getAllWorkouts:', err);
     return readDB().workouts;
   }
 }
@@ -108,7 +162,7 @@ export async function logWorkout(user: string, date: string, type: WorkoutType):
       [entry.id, entry.user, entry.date, entry.type, entry.timestamp]
     );
   } catch (err) {
-    console.error('DB error, falling back to file:', err);
+    console.error('DB error in logWorkout:', err);
     const db = readDB();
     db.workouts.push(entry);
     writeDB(db);
@@ -131,7 +185,7 @@ export async function hasLoggedTypeOnDate(
     );
     return rows.length > 0;
   } catch (err) {
-    console.error('DB error, falling back to file:', err);
+    console.error('DB error in hasLoggedTypeOnDate:', err);
     return readDB().workouts.some(w => w.user === user && w.date === date && w.type === type);
   }
 }

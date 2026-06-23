@@ -1,7 +1,5 @@
 import { Workout } from './db';
 
-export const USERS = ['Blake', 'Matt', 'Kyle'] as const;
-
 const WEEKLY_TOTAL_MIN = 5;
 const WEEKLY_GRIND_MIN = 3;
 
@@ -103,8 +101,8 @@ export function calculateStats(workouts: Workout[], user: string): UserStats {
   };
 }
 
-export function getAllStats(workouts: Workout[]): UserStats[] {
-  return USERS.map(u => calculateStats(workouts, u)).sort(
+export function getAllStats(workouts: Workout[], users: string[]): UserStats[] {
+  return users.map(u => calculateStats(workouts, u)).sort(
     (a, b) =>
       b.currentStreak - a.currentStreak ||
       b.currentWeekTotal - a.currentWeekTotal ||

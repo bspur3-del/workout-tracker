@@ -5,8 +5,6 @@ import { Workout } from '@/lib/db';
 import { UserStats } from '@/lib/streak';
 import { WORKOUT_TYPES, WorkoutType } from '@/lib/types';
 
-const USERS = ['Blake', 'Matt', 'Kyle'];
-
 const TYPE_COLOR: Record<WorkoutType, string> = {
   daily_grind: '#7DC427',
   crossfit:    '#F5A623',
@@ -35,21 +33,23 @@ function getMondayOfDate(d: Date): Date {
   return monday;
 }
 
-// Returns 8 weeks of dates (oldest first), each week is Mon→Sun
+// Returns all weeks from June 22, 2026 (app start) to current week, Mon→Sun
 function buildCalendar(): string[][] {
   const today = new Date();
   const thisMonday = getMondayOfDate(today);
+  const startMonday = new Date('2026-06-22T12:00:00');
   const weeks: string[][] = [];
-  for (let w = 7; w >= 0; w--) {
-    const weekStart = new Date(thisMonday);
-    weekStart.setDate(thisMonday.getDate() - w * 7);
+  const cursor = new Date(startMonday);
+  cursor.setHours(0, 0, 0, 0);
+  while (cursor <= thisMonday) {
     const week: string[] = [];
     for (let d = 0; d < 7; d++) {
-      const day = new Date(weekStart);
-      day.setDate(weekStart.getDate() + d);
+      const day = new Date(cursor);
+      day.setDate(cursor.getDate() + d);
       week.push(dateToStr(day));
     }
     weeks.push(week);
+    cursor.setDate(cursor.getDate() + 7);
   }
   return weeks;
 }
@@ -66,11 +66,13 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 export default function StatsView({
   allWorkouts,
   allStats,
+  users,
 }: {
   allWorkouts: Workout[];
   allStats: UserStats[];
+  users: string[];
 }) {
-  const [user, setUser] = useState('Blake');
+  const [user, setUser] = useState(users[0] ?? '');
 
   const stats = allStats.find(s => s.user === user)!;
   const workouts = allWorkouts.filter(w => w.user === user);
@@ -96,8 +98,8 @@ export default function StatsView({
   return (
     <div>
       {/* User selector */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
-        {USERS.map(u => (
+      <div className="grid gap-2 mb-6" style={{ gridTemplateColumns: `repeat(${Math.min(users.length, 3)}, 1fr)` }}>
+        {users.map(u => (
           <button
             key={u}
             onClick={() => setUser(u)}

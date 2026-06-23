@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-import { getAllWorkouts } from '@/lib/db';
+import { getAllWorkouts, getUsers } from '@/lib/db';
 import { getAllStats, UserStats } from '@/lib/streak';
+import AddPersonButton from '@/components/AddPersonButton';
 
 const RANK = ['🥇', '🥈', '🥉'];
 
@@ -73,8 +74,8 @@ function getDaysLeftInWeek(): number {
 }
 
 export default async function Home() {
-  const workouts = await getAllWorkouts();
-  const stats = getAllStats(workouts);
+  const [workouts, users] = await Promise.all([getAllWorkouts(), getUsers()]);
+  const stats = getAllStats(workouts, users);
   const daysLeft = getDaysLeftInWeek();
 
   return (
@@ -189,7 +190,7 @@ export default async function Home() {
 
       {/* All-time totals */}
       <h2 className="text-base font-bold mb-3" style={{ color: '#fff' }}>All-Time Totals</h2>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 mb-6">
         {stats.map(s => (
           <div
             key={s.user}
@@ -202,6 +203,8 @@ export default async function Home() {
           </div>
         ))}
       </div>
+
+      <AddPersonButton />
     </main>
   );
 }
