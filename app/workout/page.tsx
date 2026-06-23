@@ -70,6 +70,8 @@ const overload = [
   { week: 'Month 2+', label: 'LEVEL UP', desc: 'Advance moves: archer push-ups, Bulgarian splits, pseudo planche.' },
 ];
 
+import WorkoutTimer from '@/components/WorkoutTimer';
+
 function SectionLabel({ color, label, title, time }: { color: string; label: string; title: string; time: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
@@ -85,6 +87,8 @@ export default function WorkoutPage() {
     <main className="px-4 pt-10 pb-4">
       <h2 className="text-2xl font-black mb-1" style={{ color: '#fff' }}>The Workout</h2>
       <p className="text-sm mb-1" style={{ color: 'var(--muted)' }}>20 min · 0 equipment · 6 moves</p>
+      <WorkoutTimer />
+
       <p className="text-xs mb-8 px-3 py-2 rounded-lg" style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--muted)' }}>
         ⚡ Rest <strong style={{ color: '#fff' }}>45 sec</strong> between sets. Short rest = metabolic stress. If you finish a set feeling fresh, add reps next session.
       </p>
