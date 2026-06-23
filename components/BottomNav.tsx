@@ -15,15 +15,16 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 flex"
+      className="fixed flex"
       style={{
-        background: 'var(--card)',
-        borderTop: '1px solid var(--border)',
-        maxWidth: '448px',
-        margin: '0 auto',
+        bottom: '16px',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '100%',
+        width: 'calc(100% - 32px)',
+        maxWidth: '416px',
+        background: 'var(--card)',
+        border: '1px solid var(--border)',
+        borderRadius: '20px',
       }}
     >
       {links.map(({ href, label, icon }) => {

@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-screen" style={{ background: 'var(--bg)' }}>
-        <div className="max-w-md mx-auto pb-24">
+        <div className="max-w-md mx-auto pb-28">
           {children}
         </div>
         <BottomNav />
