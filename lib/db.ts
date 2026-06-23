@@ -1,5 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import { WorkoutType } from './types';
+
+export type { WorkoutType };
+export { WORKOUT_TYPES } from './types';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'workouts.json');
 
@@ -7,6 +11,7 @@ export interface Workout {
   id: string;
   user: string;
   date: string; // YYYY-MM-DD
+  type: WorkoutType;
   timestamp: number;
 }
 
@@ -33,17 +38,21 @@ export function getAllWorkouts(): Workout[] {
   return readDB().workouts;
 }
 
-export function logWorkout(user: string, date: string): void {
+export function logWorkout(user: string, date: string, type: WorkoutType): void {
   const db = readDB();
   db.workouts.push({
-    id: `${user}-${date}-${Date.now()}`,
+    id: `${user}-${date}-${type}-${Date.now()}`,
     user,
     date,
+    type,
     timestamp: Date.now(),
   });
   writeDB(db);
 }
 
-export function hasLoggedOnDate(user: string, date: string): boolean {
-  return readDB().workouts.some(w => w.user === user && w.date === date);
+// Prevents the same person from logging the same workout type twice on one day
+export function hasLoggedTypeOnDate(user: string, date: string, type: WorkoutType): boolean {
+  return readDB().workouts.some(
+    w => w.user === user && w.date === date && w.type === type
+  );
 }

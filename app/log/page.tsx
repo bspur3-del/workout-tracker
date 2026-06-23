@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { logWorkoutAction } from '@/app/actions';
+import { WorkoutType, WORKOUT_TYPES } from '@/lib/types';
 
 const USERS = ['Blake', 'Matt', 'Kyle'];
 
@@ -16,8 +17,8 @@ function getTodayLocal(): string {
 }
 
 function formatDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  return new Date(y, mo - 1, d).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -25,38 +26,47 @@ function formatDate(dateStr: string): string {
 }
 
 export default function LogPage() {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [user, setUser] = useState<string | null>(null);
+  const [workoutType, setWorkoutType] = useState<WorkoutType | null>(null);
   const [status, setStatus] = useState<Status>('idle');
   const today = getTodayLocal();
 
   async function handleLog() {
-    if (!selected) return;
+    if (!user || !workoutType) return;
     setStatus('loading');
     try {
-      const result = await logWorkoutAction(selected, today);
+      const result = await logWorkoutAction(user, today, workoutType);
       setStatus(result.alreadyLogged ? 'already' : 'done');
     } catch {
       setStatus('idle');
     }
   }
 
+  function reset() {
+    setUser(null);
+    setWorkoutType(null);
+    setStatus('idle');
+  }
+
+  const selectedTypeLabel = WORKOUT_TYPES.find(t => t.value === workoutType);
+
   if (status === 'done') {
     return (
       <main className="px-4 pt-16 text-center">
-        <div className="text-8xl mb-6 animate-bounce">🔥</div>
+        <div className="text-8xl mb-6">🔥</div>
         <h2 className="text-3xl font-black mb-2" style={{ color: '#fff' }}>
-          Let&apos;s go, {selected}!
+          Let&apos;s go, {user}!
         </h2>
-        <p className="text-sm mb-2" style={{ color: 'var(--muted)' }}>
-          {formatDate(today)}
-        </p>
-        <p className="mb-10" style={{ color: 'var(--green)' }}>Workout logged. Keep the streak alive.</p>
-        <button
-          onClick={() => { setSelected(null); setStatus('idle'); }}
-          className="text-sm font-bold underline"
-          style={{ color: 'var(--muted)' }}
+        <p
+          className="inline-block px-4 py-1 rounded-full text-sm font-bold mb-2"
+          style={{ background: 'rgba(125,196,39,0.15)', color: 'var(--green)' }}
         >
-          Log for someone else?
+          {selectedTypeLabel?.emoji} {selectedTypeLabel?.label}
+        </p>
+        <p className="text-sm mb-1" style={{ color: 'var(--muted)' }}>{formatDate(today)}</p>
+        <p className="mb-10" style={{ color: 'var(--green)' }}>Logged. Keep the streak alive.</p>
+        <button onClick={reset} className="text-sm font-bold underline" style={{ color: 'var(--muted)' }}>
+          Log another workout?
         </button>
       </main>
     );
@@ -67,73 +77,113 @@ export default function LogPage() {
       <main className="px-4 pt-16 text-center">
         <div className="text-8xl mb-6">✅</div>
         <h2 className="text-3xl font-black mb-2" style={{ color: '#fff' }}>
-          Already done, {selected}!
+          Already logged!
         </h2>
         <p className="text-sm mb-2" style={{ color: 'var(--muted)' }}>
-          {formatDate(today)}
+          {user} already logged{' '}
+          <span style={{ color: 'var(--green)' }}>
+            {selectedTypeLabel?.emoji} {selectedTypeLabel?.label}
+          </span>{' '}
+          today.
         </p>
-        <p className="mb-10" style={{ color: 'var(--green)' }}>
-          You already logged a workout today. Come back tomorrow.
+        <p className="mb-10" style={{ color: 'var(--muted)' }}>
+          Pick a different workout type or come back tomorrow.
         </p>
-        <button
-          onClick={() => { setSelected(null); setStatus('idle'); }}
-          className="text-sm font-bold underline"
-          style={{ color: 'var(--muted)' }}
-        >
+        <button onClick={reset} className="text-sm font-bold underline" style={{ color: 'var(--muted)' }}>
           Go back
         </button>
       </main>
     );
   }
 
+  const readyToLog = user && workoutType;
+
   return (
     <main className="px-4 pt-10">
       <h2 className="text-2xl font-black mb-1" style={{ color: '#fff' }}>Log Workout</h2>
       <p className="text-sm mb-8" style={{ color: 'var(--muted)' }}>{formatDate(today)}</p>
 
-      <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: 'var(--muted)' }}>
-        Who are you?
+      {/* Step 1: Who are you? */}
+      <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>
+        1 — Who are you?
       </p>
-
-      <div className="space-y-3 mb-8">
-        {USERS.map(user => {
-          const active = selected === user;
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        {USERS.map(u => {
+          const active = user === u;
           return (
             <button
-              key={user}
-              onClick={() => setSelected(user)}
-              className="w-full py-5 rounded-2xl text-xl font-black transition-all active:scale-95"
+              key={u}
+              onClick={() => setUser(u)}
+              className="py-4 rounded-2xl text-lg font-black transition-all active:scale-95"
               style={{
                 background: active ? 'var(--green)' : 'var(--card)',
                 color: active ? '#000' : '#fff',
                 border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`,
               }}
             >
-              {user}
+              {u}
             </button>
           );
         })}
       </div>
 
-      {selected && (
-        <button
-          onClick={handleLog}
-          disabled={status === 'loading'}
-          className="w-full py-7 rounded-2xl text-2xl font-black transition-all active:scale-95 disabled:opacity-60"
-          style={{ background: 'var(--green)', color: '#000' }}
-        >
-          {status === 'loading' ? 'Saving...' : 'I DID IT!  ⚡'}
-        </button>
-      )}
+      {/* Step 2: What did you do? */}
+      <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>
+        2 — What did you do?
+      </p>
+      <div className="grid grid-cols-2 gap-3 mb-8">
+        {WORKOUT_TYPES.map(({ value, label, emoji }) => {
+          const active = workoutType === value;
+          const isGrind = value === 'daily_grind';
+          return (
+            <button
+              key={value}
+              onClick={() => setWorkoutType(value)}
+              className={`py-4 px-3 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${isGrind ? 'col-span-2' : ''}`}
+              style={{
+                background: active
+                  ? isGrind ? 'var(--green)' : 'rgba(125,196,39,0.15)'
+                  : 'var(--card)',
+                color: active
+                  ? isGrind ? '#000' : 'var(--green)'
+                  : '#fff',
+                border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`,
+                justifyContent: isGrind ? 'center' : 'flex-start',
+                fontSize: isGrind ? '1.1rem' : '0.95rem',
+              }}
+            >
+              <span className="text-xl">{emoji}</span>
+              <span>{label}</span>
+              {isGrind && (
+                <span
+                  className="ml-auto text-xs font-black px-2 py-0.5 rounded-full"
+                  style={{
+                    background: active ? 'rgba(0,0,0,0.2)' : 'rgba(125,196,39,0.2)',
+                    color: active ? '#000' : 'var(--green)',
+                  }}
+                >
+                  counts for streak
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      {!selected && (
-        <div
-          className="w-full py-7 rounded-2xl text-2xl font-black text-center"
-          style={{ background: 'var(--card)', color: '#333', border: '2px solid var(--border)' }}
-        >
-          I DID IT!  ⚡
-        </div>
-      )}
+      {/* Log button */}
+      <button
+        onClick={handleLog}
+        disabled={!readyToLog || status === 'loading'}
+        className="w-full py-7 rounded-2xl text-2xl font-black transition-all active:scale-95 disabled:opacity-40"
+        style={{
+          background: readyToLog ? 'var(--green)' : 'var(--card)',
+          color: readyToLog ? '#000' : '#333',
+          border: readyToLog ? 'none' : '2px solid var(--border)',
+          cursor: readyToLog ? 'pointer' : 'default',
+        }}
+      >
+        {status === 'loading' ? 'Saving...' : 'I DID IT!  ⚡'}
+      </button>
     </main>
   );
 }
