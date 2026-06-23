@@ -16,11 +16,11 @@ export async function logWorkoutAction(
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Invalid date');
   if (!VALID_TYPES.has(type)) throw new Error('Invalid workout type');
 
-  if (hasLoggedTypeOnDate(user, date, type)) {
+  if (await hasLoggedTypeOnDate(user, date, type)) {
     return { alreadyLogged: true };
   }
 
-  logWorkout(user, date, type);
+  await logWorkout(user, date, type);
   revalidatePath('/');
   return { alreadyLogged: false };
 }

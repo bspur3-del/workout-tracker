@@ -72,8 +72,8 @@ function getDaysLeftInWeek(): number {
   return day === 0 ? 0 : 7 - day;
 }
 
-export default function Home() {
-  const workouts = getAllWorkouts();
+export default async function Home() {
+  const workouts = await getAllWorkouts();
   const stats = getAllStats(workouts);
   const daysLeft = getDaysLeftInWeek();
 

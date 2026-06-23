@@ -1,14 +1,8 @@
-import fs from 'fs';
-import path from 'path';
+import { Pool } from 'pg';
 import { WorkoutType } from './types';
 
 export type { WorkoutType };
 export { WORKOUT_TYPES } from './types';
-
-// In production (Railway), data lives on the persistent Volume at /app/data.
-// In dev, fall back to the local data/ folder inside the project.
-const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'workouts.json');
 
 export interface Workout {
   id: string;
@@ -18,44 +12,60 @@ export interface Workout {
   timestamp: number;
 }
 
-interface DB {
-  workouts: Workout[];
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+});
 
-function readDB(): DB {
-  try {
-    const data = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return { workouts: [] };
+// Create table once per process lifetime
+let tableReady: Promise<void> | null = null;
+function ensureTable(): Promise<void> {
+  if (!tableReady) {
+    tableReady = pool
+      .query(`
+        CREATE TABLE IF NOT EXISTS workouts (
+          id        TEXT PRIMARY KEY,
+          "user"    TEXT NOT NULL,
+          date      TEXT NOT NULL,
+          type      TEXT NOT NULL,
+          timestamp BIGINT NOT NULL
+        )
+      `)
+      .then(() => undefined);
   }
+  return tableReady;
 }
 
-function writeDB(db: DB): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+export async function getAllWorkouts(): Promise<Workout[]> {
+  await ensureTable();
+  const { rows } = await pool.query('SELECT * FROM workouts ORDER BY timestamp ASC');
+  return rows.map(r => ({
+    id: r.id,
+    user: r.user,
+    date: r.date,
+    type: r.type as WorkoutType,
+    timestamp: Number(r.timestamp),
+  }));
 }
 
-export function getAllWorkouts(): Workout[] {
-  return readDB().workouts;
-}
-
-export function logWorkout(user: string, date: string, type: WorkoutType): void {
-  const db = readDB();
-  db.workouts.push({
-    id: `${user}-${date}-${type}-${Date.now()}`,
-    user,
-    date,
-    type,
-    timestamp: Date.now(),
-  });
-  writeDB(db);
-}
-
-// Prevents the same person from logging the same workout type twice on one day
-export function hasLoggedTypeOnDate(user: string, date: string, type: WorkoutType): boolean {
-  return readDB().workouts.some(
-    w => w.user === user && w.date === date && w.type === type
+export async function logWorkout(user: string, date: string, type: WorkoutType): Promise<void> {
+  await ensureTable();
+  const id = `${user}-${date}-${type}-${Date.now()}`;
+  await pool.query(
+    'INSERT INTO workouts (id, "user", date, type, timestamp) VALUES ($1, $2, $3, $4, $5)',
+    [id, user, date, type, Date.now()]
   );
+}
+
+export async function hasLoggedTypeOnDate(
+  user: string,
+  date: string,
+  type: WorkoutType
+): Promise<boolean> {
+  await ensureTable();
+  const { rows } = await pool.query(
+    'SELECT 1 FROM workouts WHERE "user" = $1 AND date = $2 AND type = $3 LIMIT 1',
+    [user, date, type]
+  );
+  return rows.length > 0;
 }
