@@ -120,7 +120,7 @@ export default function LogForm({ users }: { users: string[] }) {
             <button
               key={u}
               onClick={() => setUser(u)}
-              className="py-4 rounded-2xl text-lg font-black transition-all active:scale-95"
+              className="py-4 rounded-2xl text-lg font-black transition-all active:opacity-75"
               style={{
                 background: active ? 'var(--green)' : 'var(--card)',
                 color: active ? '#000' : '#fff',
@@ -171,7 +171,7 @@ export default function LogForm({ users }: { users: string[] }) {
             <button
               key={value}
               onClick={() => setWorkoutType(value)}
-              className={`py-4 px-3 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${isGrind ? 'col-span-2' : ''}`}
+              className={`py-4 px-3 rounded-2xl font-bold transition-all active:opacity-75 flex items-center gap-2 ${isGrind ? 'col-span-2' : ''}`}
               style={{
                 background: active
                   ? isGrind ? 'var(--green)' : 'rgba(125,196,39,0.15)'
@@ -206,7 +206,7 @@ export default function LogForm({ users }: { users: string[] }) {
       <button
         onClick={handleLog}
         disabled={!readyToLog || status === 'loading'}
-        className="w-full py-7 rounded-2xl text-2xl font-black transition-all active:scale-95 disabled:opacity-40"
+        className="w-full py-7 rounded-2xl text-2xl font-black transition-all active:opacity-75 disabled:opacity-40"
         style={{
           background: readyToLog ? 'var(--green)' : 'var(--card)',
           color: readyToLog ? '#000' : '#333',

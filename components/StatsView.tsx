@@ -103,7 +103,7 @@ export default function StatsView({
           <button
             key={u}
             onClick={() => setUser(u)}
-            className="py-3 rounded-xl text-lg font-black transition-all active:scale-95"
+            className="py-3 rounded-xl text-lg font-black transition-all active:opacity-75"
             style={{
               background: user === u ? '#7DC427' : 'var(--card)',
               color: user === u ? '#000' : '#fff',

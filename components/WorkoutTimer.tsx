@@ -261,7 +261,7 @@ export default function WorkoutTimer() {
       <div className="mb-6">
         <button
           onClick={handleStart}
-          className="w-full py-5 rounded-2xl text-xl font-black flex items-center justify-center gap-3 active:scale-95 transition-transform"
+          className="w-full py-5 rounded-2xl text-xl font-black flex items-center justify-center gap-3 active:opacity-75 transition-transform"
           style={{ background: '#7DC427', color: '#000' }}
         >
           ▶&nbsp; Start Workout Timer
@@ -286,7 +286,7 @@ export default function WorkoutTimer() {
         </p>
         <button
           onClick={handleStop}
-          className="w-full max-w-sm py-5 rounded-2xl text-xl font-black active:scale-95 transition-transform"
+          className="w-full max-w-sm py-5 rounded-2xl text-xl font-black active:opacity-75 transition-transform"
           style={{ background: '#7DC427', color: '#000' }}
         >
           Finish
@@ -407,7 +407,7 @@ export default function WorkoutTimer() {
         {step.kind === 'exercise' && (
           <button
             onClick={handleSkip}
-            className="w-full py-6 rounded-2xl text-2xl font-black active:scale-95 transition-transform"
+            className="w-full py-6 rounded-2xl text-2xl font-black active:opacity-75 transition-transform"
             style={{ background: '#7DC427', color: '#000' }}
           >
             Done  ✓
@@ -418,14 +418,14 @@ export default function WorkoutTimer() {
           <div className="space-y-3">
             <button
               onClick={handlePause}
-              className="w-full py-4 rounded-2xl text-lg font-bold active:scale-95 transition-transform"
+              className="w-full py-4 rounded-2xl text-lg font-bold active:opacity-75 transition-transform"
               style={{ background: '#141414', color: '#888', border: '1px solid #222' }}
             >
               {paused ? '▶  Resume' : '⏸  Pause'}
             </button>
             <button
               onClick={handleSkip}
-              className="w-full py-3 rounded-2xl text-sm font-bold active:scale-95 transition-transform"
+              className="w-full py-3 rounded-2xl text-sm font-bold active:opacity-75 transition-transform"
               style={{ background: 'transparent', color: '#444', border: '1px solid #1e1e1e' }}
             >
               Skip →

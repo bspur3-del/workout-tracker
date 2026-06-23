@@ -28,7 +28,7 @@ export default function AddPersonButton() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full py-3 rounded-2xl text-sm font-bold transition-all active:scale-95"
+        className="w-full py-3 rounded-2xl text-sm font-bold transition-all active:opacity-75"
         style={{ background: 'var(--card)', color: 'var(--muted)', border: '1px dashed var(--border)' }}
       >
         + Add person
@@ -62,7 +62,7 @@ export default function AddPersonButton() {
         <button
           onClick={handleAdd}
           disabled={!name.trim() || saving}
-          className="flex-1 py-3 rounded-xl text-sm font-black transition-all active:scale-95 disabled:opacity-40"
+          className="flex-1 py-3 rounded-xl text-sm font-black transition-all active:opacity-75 disabled:opacity-40"
           style={{ background: 'var(--green)', color: '#000' }}
         >
           {saving ? 'Adding...' : 'Add'}

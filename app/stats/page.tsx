@@ -2,7 +2,7 @@ import { getAllWorkouts, getUsers } from '@/lib/db';
 import { getAllStats } from '@/lib/streak';
 import StatsView from '@/components/StatsView';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 30;
 
 export default async function StatsPage() {
   const [workouts, users] = await Promise.all([getAllWorkouts(), getUsers()]);
