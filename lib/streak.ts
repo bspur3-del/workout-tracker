@@ -2,16 +2,17 @@ import { Workout } from './db';
 
 export const USERS = ['Blake', 'Matt', 'Kyle'] as const;
 
-// To win a week: 5+ total workouts AND 3+ must be The Daily Grind
 const WEEKLY_TOTAL_MIN = 5;
 const WEEKLY_GRIND_MIN = 3;
 
 export interface UserStats {
   user: string;
-  currentWeekTotal: number;     // all workout logs this week
-  currentWeekDailyGrind: number; // daily_grind logs this week
+  currentWeekTotal: number;
+  currentWeekDailyGrind: number;
   currentStreak: number;
+  bestStreak: number;
   totalWorkouts: number;
+  weeksWon: number;
   lastWorkoutDate: string | null;
 }
 
@@ -47,44 +48,57 @@ function weekWon(b: WeekBucket): boolean {
   return b.total >= WEEKLY_TOTAL_MIN && b.dailyGrind >= WEEKLY_GRIND_MIN;
 }
 
+function calcBestStreak(weekMap: Map<string, WeekBucket>): number {
+  const wonWeeks = [...weekMap.keys()].filter(k => weekWon(weekMap.get(k)!)).sort();
+  if (wonWeeks.length === 0) return 0;
+  let best = 1, run = 1;
+  for (let i = 1; i < wonWeeks.length; i++) {
+    const diffDays = Math.round(
+      (new Date(wonWeeks[i] + 'T12:00:00').getTime() -
+       new Date(wonWeeks[i - 1] + 'T12:00:00').getTime()) / 86_400_000
+    );
+    if (diffDays === 7) { run++; best = Math.max(best, run); }
+    else run = 1;
+  }
+  return best;
+}
+
 export function calculateStats(workouts: Workout[], user: string): UserStats {
   const mine = workouts.filter(w => w.user === user);
 
-  // Build map: monday-of-week -> { total, dailyGrind }
-  // Each entry is already a unique (date, type) pair (enforced at log time)
   const weekMap = new Map<string, WeekBucket>();
   for (const w of mine) {
     const monday = getMondayOfWeek(w.date);
     if (!weekMap.has(monday)) weekMap.set(monday, { total: 0, dailyGrind: 0 });
-    const bucket = weekMap.get(monday)!;
-    bucket.total++;
-    if (w.type === 'daily_grind') bucket.dailyGrind++;
+    const b = weekMap.get(monday)!;
+    b.total++;
+    if (w.type === 'daily_grind') b.dailyGrind++;
   }
 
   const today = getTodayStr();
   const thisWeekMonday = getMondayOfWeek(today);
   const thisWeek = weekMap.get(thisWeekMonday) ?? { total: 0, dailyGrind: 0 };
 
-  // Streak = consecutive won weeks going back from last week (or this week if already won)
   let streak = 0;
   let check = weekWon(thisWeek) ? thisWeekMonday : prevWeek(thisWeekMonday);
   while (true) {
-    const bucket = weekMap.get(check) ?? { total: 0, dailyGrind: 0 };
-    if (weekWon(bucket)) {
-      streak++;
-      check = prevWeek(check);
-    } else {
-      break;
-    }
+    const b = weekMap.get(check) ?? { total: 0, dailyGrind: 0 };
+    if (weekWon(b)) { streak++; check = prevWeek(check); }
+    else break;
   }
 
+  const bestStreak = Math.max(calcBestStreak(weekMap), streak);
+  const weeksWon = [...weekMap.values()].filter(weekWon).length;
   const sorted = mine.map(w => w.date).sort();
+
   return {
     user,
     currentWeekTotal: thisWeek.total,
     currentWeekDailyGrind: thisWeek.dailyGrind,
     currentStreak: streak,
+    bestStreak,
     totalWorkouts: mine.length,
+    weeksWon,
     lastWorkoutDate: sorted.length > 0 ? sorted[sorted.length - 1] : null,
   };
 }

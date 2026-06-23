@@ -7,6 +7,7 @@ const links = [
   { href: '/', label: 'Leaderboard', icon: '🏆' },
   { href: '/log', label: 'Log It', icon: '⚡' },
   { href: '/workout', label: 'Workout', icon: '💪' },
+  { href: '/stats', label: 'Stats', icon: '📊' },
 ];
 
 export default function BottomNav() {
