@@ -63,10 +63,8 @@ function buildSteps(): Step[] {
 
   s.push(
     { kind: 'timed', section: 'cooldown', label: "Child's pose", duration: 45 },
-    { kind: 'timed', section: 'cooldown', label: 'Pigeon pose', sublabel: 'Left side', duration: 30 },
-    { kind: 'timed', section: 'cooldown', label: 'Pigeon pose', sublabel: 'Right side', duration: 30 },
-    { kind: 'timed', section: 'cooldown', label: 'Quad stretch', sublabel: 'Left leg', duration: 20 },
-    { kind: 'timed', section: 'cooldown', label: 'Quad stretch', sublabel: 'Right leg', duration: 20 },
+    { kind: 'timed', section: 'cooldown', label: 'Pigeon pose', sublabel: '30 sec each side', duration: 60 },
+    { kind: 'timed', section: 'cooldown', label: 'Standing quad stretch', sublabel: '20 sec each side', duration: 40 },
     { kind: 'timed', section: 'cooldown', label: 'Doorway chest stretch', duration: 30 },
     { kind: 'done' },
   );
