@@ -302,7 +302,7 @@ export default function WorkoutTimer() {
   const progress = (idx / (TOTAL_ACTIVE - 1)) * 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: '#0a0a0a' }}>
+    <div className="fixed inset-0 flex flex-col" style={{ background: '#0a0a0a', zIndex: 100 }}>
 
       {/* ── Top bar ── */}
       <div className="flex items-center gap-3 px-4 pt-8 pb-3">
@@ -315,6 +315,13 @@ export default function WorkoutTimer() {
         <span className="text-xs shrink-0" style={{ color: '#444' }}>
           {idx + 1}/{TOTAL_ACTIVE}
         </span>
+        <button
+          onClick={handleSkip}
+          className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0"
+          style={{ background: '#1c1c1c', color: '#7DC427' }}
+        >
+          Next →
+        </button>
         <button
           onClick={handleStop}
           className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0"
@@ -410,27 +417,18 @@ export default function WorkoutTimer() {
             className="w-full py-6 rounded-2xl text-2xl font-black active:opacity-75 transition-transform"
             style={{ background: '#7DC427', color: '#000' }}
           >
-            Next  →
+            Done  ✓
           </button>
         )}
 
         {step.kind === 'timed' && (
-          <div className="space-y-3">
-            <button
-              onClick={handlePause}
-              className="w-full py-4 rounded-2xl text-lg font-bold active:opacity-75 transition-transform"
-              style={{ background: '#141414', color: '#888', border: '1px solid #222' }}
-            >
-              {paused ? '▶  Resume' : '⏸  Pause'}
-            </button>
-            <button
-              onClick={handleSkip}
-              className="w-full py-4 rounded-2xl text-lg font-bold active:opacity-75 transition-transform"
-              style={{ background: '#141414', color: '#888', border: '1px solid #222' }}
-            >
-              Next  →
-            </button>
-          </div>
+          <button
+            onClick={handlePause}
+            className="w-full py-4 rounded-2xl text-lg font-bold active:opacity-75 transition-transform"
+            style={{ background: '#141414', color: '#888', border: '1px solid #222' }}
+          >
+            {paused ? '▶  Resume' : '⏸  Pause'}
+          </button>
         )}
       </div>
     </div>
